@@ -1,3 +1,4 @@
+from __future__ import division, print_function
 import spacy
 import os
 
@@ -7,7 +8,6 @@ except:
     os.system("python -m spacy download en_core_web_sm")
     nlp = spacy.load("en_core_web_sm")
 
-from __future__ import division, print_function
 import os
 import torch
 import numpy as np
