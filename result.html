@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Result</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #00bcd4, #8bc34a);
+            color: #333;
+        }
+
+        /* Navbar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #00796b;
+            padding: 15px 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .navbar h1 {
+            margin: 0;
+            font-size: 28px;
+            color: #fff;
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 20px;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        .navbar a:hover {
+            color: #ffeb3b;
+        }
+
+        /* Main Content */
+        .container {
+            margin-bottom: 100px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .container h1 {
+            margin-bottom: 30px;
+            font-size: 32px;
+            color: #2c6b3f;
+            font-weight: 600;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .result-card {
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: left;
+        }
+        .result-card img {
+            display: block;
+            margin: 0 auto;
+            border: 3px solid #fff;
+            border-radius: 12px;
+            max-width: 100%;
+        }
+        .result-card h3, .result-card h4, .result-card p {
+            margin: 15px 0;
+            color: #2c6b3f;
+        }
+        .result-card h4 {
+            color: #00796b;
+            font-weight: 600;
+        }
+        .result-card ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .result-card ul li {
+            background: rgba(0, 0, 0, 0.1);
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #00796b;
+            padding: 20px;
+            text-align: center;
+            color: #fff;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            font-size: 14px;
+            box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .footer a {
+            color: #ffeb3b;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <div class="navbar">
+        <h1>Farmers Hub</h1>
+        <nav>
+            <a href="http://localhost:3000/">Home</a>
+            <a href="/about">About</a>
+            <a href="/contact">Contact</a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1>Prediction Result</h1>
+        <div class="result-card">
+            <h3>Cropped Plant: {{ crop }}</h3>
+            <h4>Disease: {{ disease }}</h4>
+            <p><strong>Description:</strong> {{ description }}</p>
+            <p><strong>Solution:</strong> {{ solution }}</p>
+
+            {% if entities %}
+                <h4>Identified Entities from Symptoms:</h4>
+                <ul>
+                    {% for entity, label in entities %}
+                        <li>{{ entity }} ({{ label }})</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% if keywords %}
+                <h4>Keywords Extracted:</h4>
+                <ul>
+                    {% for keyword in keywords %}
+                        <li>{{ keyword }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2024 Plant Health Hub</p>
+    </div>
+</body>
+</html>
