@@ -7,7 +7,7 @@ import os
 import gdown
 
 # ---------------------------
-# 38 CLASS LABELS matching your trained model
+# 38 CLASS LABELS matching trained model
 # ---------------------------
 CLASS_LABELS = [
     "Apple___Apple_scab",
@@ -51,7 +51,7 @@ CLASS_LABELS = [
 ]
 
 # ---------------------------
-# MODEL ARCHITECTURE (matches checkpoint)
+# Model architecture (matches checkpoint)
 # ---------------------------
 class PlantDiseaseCNN(nn.Module):
     def __init__(self, num_classes):
@@ -60,7 +60,7 @@ class PlantDiseaseCNN(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=4)
 
-        # fc1 input size must match training flatten
+        # flatten size must match training
         self.fc1 = nn.Linear(57600, 512)
         self.fc2 = nn.Linear(512, num_classes)
 
@@ -73,18 +73,18 @@ class PlantDiseaseCNN(nn.Module):
         return x
 
 # ---------------------------
-# DEVICE
+# Device
 # ---------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ---------------------------
-# CREATE MODEL
+# Create model
 # ---------------------------
 model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS))
 model.to(device)
 
 # ---------------------------
-# MODEL PATH AND DOWNLOAD
+# Model path and download
 # ---------------------------
 MODEL_PATH = "plant_disease_model.pth"
 if not os.path.exists(MODEL_PATH):
@@ -92,30 +92,30 @@ if not os.path.exists(MODEL_PATH):
     gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
 
 # ---------------------------
-# LOAD MODEL
+# Load model safely
 # ---------------------------
 try:
     state_dict = torch.load(MODEL_PATH, map_location=device)
-    model.load_state_dict(state_dict, strict=False)  # fc layers may be mismatched, safe demo
+    model.load_state_dict(state_dict, strict=False)
     model.eval()
     st.write("✅ Model loaded successfully")
 except Exception as e:
     st.error(f"⚠ Model loading failed: {e}")
 
 # ---------------------------
-# IMAGE TRANSFORM
+# Image transform (exact training size)
 # ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((128, 128)),  # must match training size to load fc1
+    transforms.Resize((128, 128)),  # must match training
     transforms.ToTensor()
 ])
 
 # ---------------------------
-# STREAMLIT UI
+# Streamlit UI
 # ---------------------------
 st.title("🌿 Plant Disease Detection App")
 
-uploaded_file = st.file_uploader("Upload a plant image", type=["jpg","png","jpeg"])
+uploaded_file = st.file_uploader("Upload a plant image", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
     try:
@@ -129,7 +129,7 @@ if uploaded_file is not None:
             _, predicted = torch.max(outputs, 1)
             raw_result = CLASS_LABELS[predicted.item()]
             result = raw_result.replace("___", " - ").replace("_", " ")
-        
+
         st.success(f"Prediction: {result}")
 
     except Exception as e:
