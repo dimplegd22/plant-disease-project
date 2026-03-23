@@ -53,17 +53,20 @@ CLASS_LABELS = [
 # ✅ MODEL ARCHITECTURE
 # ---------------------------
 class PlantDiseaseCNN(nn.Module):
-    def __init__(self):
-        super(PlantDiseaseCNN, self).__init__()
-
-        # ✅ Correct conv layers (from your .pth)
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=4)
+    def __init__(self, num_classes):
+        super().__init__()
+        self.conv1 = nn.Conv2d(3, 32, 4)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=4)
+        self.conv2 = nn.Conv2d(32, 64, 4)
 
-        # ✅ THIS IS THE FIX YOU ASKED ABOUT 👇
-        self.fc1 = nn.Linear(57600, 512)
-        self.fc2 = nn.Linear(512, len(CLASS_LABELS))
+        # Create a dummy tensor to compute the flatten size automatically
+        dummy = torch.zeros(1, 3, 256, 256)  # 256x256 input image
+        dummy = self.pool(torch.relu(self.conv1(dummy)))
+        dummy = self.pool(torch.relu(self.conv2(dummy)))
+        flatten_size = dummy.numel()  # total number of features
+
+        self.fc1 = nn.Linear(flatten_size, 512)
+        self.fc2 = nn.Linear(512, num_classes)
 
     def forward(self, x):
         x = self.pool(torch.relu(self.conv1(x)))
