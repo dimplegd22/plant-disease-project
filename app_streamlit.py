@@ -84,7 +84,6 @@ transform = transforms.Compose([
     transforms.Resize((128, 128)),   # IMPORTANT FIX
     transforms.ToTensor()
 ])
-])
 
 # ---------------------------
 # ✅ STREAMLIT UI
