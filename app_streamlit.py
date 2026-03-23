@@ -7,7 +7,7 @@ import os
 import gdown
 
 # ---------------------------
-# 38 CLASS LABELS
+# 38 CLASS LABELS (match your .pth)
 # ---------------------------
 CLASS_LABELS = [
     "Apple___Apple_scab","Apple___Black_rot","Apple___Cedar_apple_rust",
@@ -27,28 +27,16 @@ CLASS_LABELS = [
 ]
 
 # ---------------------------
-# Define original training image size
-# ---------------------------
-original_height = 128
-original_width = 128
-
-# ---------------------------
-# MODEL ARCHITECTURE (dynamic flatten)
+# MODEL ARCHITECTURE (matches checkpoint)
 # ---------------------------
 class PlantDiseaseCNN(nn.Module):
-    def __init__(self, num_classes, input_size=(original_height, original_width)):
+    def __init__(self, num_classes):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 32, 4)
-        self.pool = nn.MaxPool2d(2,2)
-        self.conv2 = nn.Conv2d(32, 64, 4)
-
-        # compute flatten size dynamically
-        dummy = torch.zeros(1,3,*input_size)
-        dummy = self.pool(torch.relu(self.conv1(dummy)))
-        dummy = self.pool(torch.relu(self.conv2(dummy)))
-        flatten_size = dummy.numel()
-
-        self.fc1 = nn.Linear(flatten_size, 512)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=4)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4)
+        # fc1 input size must match checkpoint (57600)
+        self.fc1 = nn.Linear(57600, 512)
         self.fc2 = nn.Linear(512, num_classes)
 
     def forward(self, x):
@@ -67,7 +55,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # ---------------------------
 # CREATE MODEL
 # ---------------------------
-model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS), input_size=(original_height, original_width))
+model = PlantDiseaseCNN()
 model.to(device)
 
 # ---------------------------
@@ -83,18 +71,19 @@ if not os.path.exists(MODEL_PATH):
 # ---------------------------
 try:
     state_dict = torch.load(MODEL_PATH, map_location=device)
-    model.load_state_dict(state_dict, strict=False)  # fc1 mismatch is ok
+    model.load_state_dict(state_dict, strict=True)  # fc1 matches exactly
     model.eval()
     st.write("✅ Model loaded successfully")
 except Exception as e:
     st.error(f"⚠ Model loading failed: {e}")
 
 # ---------------------------
-# IMAGE TRANSFORM
+# IMAGE TRANSFORM (exact training preprocessing)
 # ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((original_height, original_width)),  # exact training size
+    transforms.Resize((128, 128)),  # exact training size
     transforms.ToTensor()
+    # add normalization here if used during training
 ])
 
 # ---------------------------
@@ -102,7 +91,7 @@ transform = transforms.Compose([
 # ---------------------------
 st.title("🌿 Plant Disease Detection App")
 
-uploaded_file = st.file_uploader("Upload a plant image", type=["jpg","png","jpeg"])
+uploaded_file = st.file_uploader("Upload a plant image", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
     try:
@@ -115,8 +104,9 @@ if uploaded_file is not None:
             outputs = model(img)
             _, predicted = torch.max(outputs, 1)
             raw_result = CLASS_LABELS[predicted.item()]
-            result = raw_result.replace("___"," - ").replace("_"," ")
+            result = raw_result.replace("___", " - ").replace("_", " ")
 
         st.success(f"Prediction: {result}")
+
     except Exception as e:
         st.error(f"Error during prediction: {e}")
