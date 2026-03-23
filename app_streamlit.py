@@ -17,7 +17,7 @@ if not os.path.exists(MODEL_PATH):
     state_dict = torch.load(MODEL_PATH, map_location=device)
     model.load_state_dict(state_dict, strict=False)
     model.eval()
-    
+
 # Load mode
 
 CLASS_LABELS = [
