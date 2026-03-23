@@ -42,7 +42,7 @@ class PlantDiseaseCNN(nn.Module):
         dummy = self.pool(torch.relu(self.conv2(dummy)))
         flatten_size = dummy.numel()
 
-        self.fc1 = nn.Linear(flatten_size, 512)
+        self.fc1 = nn.Linear(57600, 512)
         self.fc2 = nn.Linear(512, num_classes)
 
     def forward(self, x):
