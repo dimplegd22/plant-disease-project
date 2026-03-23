@@ -56,9 +56,15 @@ CLASS_LABELS = [
 class PlantDiseaseCNN(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=4)
+        self.conv1 = nn.Conv2d(3, 32, 4)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=4)
+        self.conv2 = nn.Conv2d(32, 64, 4)
+
+         # dynamically calculate flatten size
+        dummy = torch.zeros(1, 3, *input_size)
+        dummy = self.pool(torch.relu(self.conv1(dummy)))
+        dummy = self.pool(torch.relu(self.conv2(dummy)))
+        flatten_size = dummy.numel()
 
         # flatten size must match training
         self.fc1 = nn.Linear(57600, 512)
