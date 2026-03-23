@@ -5,13 +5,11 @@ from PIL import Image
 import io
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
 # Title
 st.title("🌿 Plant Disease Detection App")
 import os
 import gdown
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 MODEL_PATH = "plant_disease_model.pth"
 
