@@ -114,7 +114,7 @@ except Exception as e:
 # ✅ IMAGE TRANSFORM
 # ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((256, 256))
+    transforms.Resize((256, 256)),
     transforms.ToTensor()
 ])
 
