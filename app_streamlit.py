@@ -6,7 +6,9 @@ import torchvision.transforms as transforms
 import os
 import gdown
 
-# 38 classes
+# ---------------------------
+# 38 CLASS LABELS
+# ---------------------------
 CLASS_LABELS = [
     "Apple___Apple_scab","Apple___Black_rot","Apple___Cedar_apple_rust",
     "Apple___healthy","Blueberry___healthy","Cherry___Powdery_mildew",
@@ -24,50 +26,73 @@ CLASS_LABELS = [
     "Tomato___Tomato_mosaic_virus","Tomato___healthy"
 ]
 
-# MODEL
+# ---------------------------
+# MODEL ARCHITECTURE
+# ---------------------------
 class PlantDiseaseCNN(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=4)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=4, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=4, stride=1, padding=1)
+        self.conv4 = nn.Conv2d(128, 256, kernel_size=4, stride=1, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=4)
-        self.fc1 = nn.Linear(57600, 512)  # flatten size from 128x128 training images
+        # Compute flatten size dynamically for 128x128 input
+        dummy = torch.zeros(1, 3, 128, 128)
+        x = self.pool(torch.relu(self.conv1(dummy)))
+        x = self.pool(torch.relu(self.conv2(x)))
+        x = self.pool(torch.relu(self.conv3(x)))
+        x = self.pool(torch.relu(self.conv4(x)))
+        flatten_size = x.numel()
+        self.fc1 = nn.Linear(flatten_size, 512)
         self.fc2 = nn.Linear(512, len(CLASS_LABELS))
 
     def forward(self, x):
         x = self.pool(torch.relu(self.conv1(x)))
         x = self.pool(torch.relu(self.conv2(x)))
+        x = self.pool(torch.relu(self.conv3(x)))
+        x = self.pool(torch.relu(self.conv4(x)))
         x = torch.flatten(x,1)
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)
         return x
 
+# ---------------------------
+# DEVICE
+# ---------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = PlantDiseaseCNN()
-model.to(device)
+model = PlantDiseaseCNN().to(device)
 
-# DOWNLOAD MODEL
+# ---------------------------
+# MODEL PATH AND DOWNLOAD
+# ---------------------------
 MODEL_PATH = "plant_disease_model.pth"
 if not os.path.exists(MODEL_PATH):
     url = "https://drive.google.com/uc?id=1PsDJwg5L45i5e60la8xjS-4v7YFWs2RA"
     gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
 
+# ---------------------------
 # LOAD MODEL
+# ---------------------------
 try:
     state_dict = torch.load(MODEL_PATH, map_location=device)
-    model.load_state_dict(state_dict)
+    model.load_state_dict(state_dict, strict=True)  # now matches exactly
     model.eval()
     st.write("✅ Model loaded successfully")
 except Exception as e:
     st.error(f"⚠ Model loading failed: {e}")
 
-# TRANSFORMS
+# ---------------------------
+# IMAGE TRANSFORM
+# ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((128,128)),  # match training input size
+    transforms.Resize((128,128)),  # exact training size
     transforms.ToTensor()
 ])
 
+# ---------------------------
 # STREAMLIT UI
+# ---------------------------
 st.title("🌿 Plant Disease Detection App")
 uploaded_file = st.file_uploader("Upload a plant image", type=["jpg","png","jpeg"])
 
@@ -76,6 +101,7 @@ if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
         st.image(image, caption="Uploaded Image", use_column_width=True)
         img = transform(image).unsqueeze(0).to(device)
+
         with torch.no_grad():
             outputs = model(img)
             _, predicted = torch.max(outputs,1)
