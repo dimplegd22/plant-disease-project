@@ -1,13 +1,4 @@
 from __future__ import division, print_function
-import spacy
-import os
-
-try:
-    nlp = spacy.load("en_core_web_sm")
-except:
-    os.system("python -m spacy download en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
-
 import os
 import torch
 import numpy as np
@@ -15,7 +6,6 @@ from torchvision import transforms
 from flask import Flask, redirect, url_for, request, render_template, jsonify
 from werkzeug.utils import secure_filename
 from PIL import Image
-import spacy
 from googletrans import Translator
 import io
 from flask import send_file
