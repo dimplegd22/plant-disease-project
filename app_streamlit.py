@@ -60,7 +60,7 @@ class PlantDiseaseCNN(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(32, 64, 4)
 
-         # dynamically calculate flatten size
+        # dynamically calculate flatten size
         dummy = torch.zeros(1, 3, *input_size)
         dummy = self.pool(torch.relu(self.conv1(dummy)))
         dummy = self.pool(torch.relu(self.conv2(dummy)))
