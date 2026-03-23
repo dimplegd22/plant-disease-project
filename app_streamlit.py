@@ -7,7 +7,7 @@ import os
 import gdown
 
 # ---------------------------
-# 38 CLASS LABELS (match your .pth)
+# 38 CLASS LABELS
 # ---------------------------
 CLASS_LABELS = [
     "Apple___Apple_scab","Apple___Black_rot","Apple___Cedar_apple_rust",
@@ -27,22 +27,28 @@ CLASS_LABELS = [
 ]
 
 # ---------------------------
-# MODEL ARCHITECTURE (dynamic flatten for any image size)
+# Define original training image size
+# ---------------------------
+original_height = 128
+original_width = 128
+
+# ---------------------------
+# MODEL ARCHITECTURE (dynamic flatten)
 # ---------------------------
 class PlantDiseaseCNN(nn.Module):
-    def __init__(self, num_classes, input_size=(256,256)):
+    def __init__(self, num_classes, input_size=(original_height, original_width)):
         super().__init__()
         self.conv1 = nn.Conv2d(3, 32, 4)
         self.pool = nn.MaxPool2d(2,2)
         self.conv2 = nn.Conv2d(32, 64, 4)
 
-        # compute flatten size dynamically from input_size
+        # compute flatten size dynamically
         dummy = torch.zeros(1,3,*input_size)
         dummy = self.pool(torch.relu(self.conv1(dummy)))
         dummy = self.pool(torch.relu(self.conv2(dummy)))
         flatten_size = dummy.numel()
 
-        self.fc1 = nn.Linear(57600, 512)
+        self.fc1 = nn.Linear(flatten_size, 512)
         self.fc2 = nn.Linear(512, num_classes)
 
     def forward(self, x):
@@ -59,9 +65,9 @@ class PlantDiseaseCNN(nn.Module):
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ---------------------------
-# CREATE MODEL (256x256 input)
+# CREATE MODEL
 # ---------------------------
-model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS), input_size=(256,256))
+model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS), input_size=(original_height, original_width))
 model.to(device)
 
 # ---------------------------
@@ -73,7 +79,7 @@ if not os.path.exists(MODEL_PATH):
     gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
 
 # ---------------------------
-# LOAD MODEL (conv weights only)
+# LOAD MODEL
 # ---------------------------
 try:
     state_dict = torch.load(MODEL_PATH, map_location=device)
@@ -87,7 +93,7 @@ except Exception as e:
 # IMAGE TRANSFORM
 # ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((original_height, original_width)),  # exact size
+    transforms.Resize((original_height, original_width)),  # exact training size
     transforms.ToTensor()
 ])
 
