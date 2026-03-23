@@ -22,7 +22,7 @@ except Exception as e:
     import streamlit as st
     st.error(f"Model loading failed: {e}")
 import torch
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load mode
 
