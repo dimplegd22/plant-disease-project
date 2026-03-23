@@ -11,6 +11,23 @@ import os
 import gdown
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+class PlantDiseaseCNN(torch.nn.Module):
+    def __init__(self):
+        super(PlantDiseaseCNN, self).__init__()
+        self.conv1 = torch.nn.Conv2d(3, 32, 3)
+        self.pool = torch.nn.MaxPool2d(2, 2)
+        self.fc1 = torch.nn.Linear(32 * 127 * 127, len(CLASS_LABELS))
+
+    def forward(self, x):
+        x = self.pool(torch.relu(self.conv1(x)))
+        x = x.view(x.size(0), -1)
+        return self.fc1(x)
+
+device = torch.device("cpu")
+model = PlantDiseaseCNN()
+
+model.eval()
+
 MODEL_PATH = "plant_disease_model.pth"
 
 if not os.path.exists(MODEL_PATH):
@@ -33,22 +50,6 @@ CLASS_LABELS = [
     'Tomato___healthy'
 ]
 
-class PlantDiseaseCNN(torch.nn.Module):
-    def __init__(self):
-        super(PlantDiseaseCNN, self).__init__()
-        self.conv1 = torch.nn.Conv2d(3, 32, 3)
-        self.pool = torch.nn.MaxPool2d(2, 2)
-        self.fc1 = torch.nn.Linear(32 * 127 * 127, len(CLASS_LABELS))
-
-    def forward(self, x):
-        x = self.pool(torch.relu(self.conv1(x)))
-        x = x.view(x.size(0), -1)
-        return self.fc1(x)
-
-device = torch.device("cpu")
-model = PlantDiseaseCNN()
-
-model.eval()
 
 # Image preprocess
 def preprocess_image(image):
