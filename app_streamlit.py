@@ -14,11 +14,11 @@ MODEL_PATH = "plant_disease_model.pth"
 if not os.path.exists(MODEL_PATH):
     url = "https://drive.google.com/uc?id=1PsDJwg5L45i5e60la8xjS-4v7YFWs2RA"
     gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
-    try:
+ try:
     state_dict = torch.load(MODEL_PATH, map_location=device)
     model.load_state_dict(state_dict, strict=False)
     model.eval()
-    except Exception as e:
+ except Exception as e:
     import streamlit as st
     st.error(f"Model loading failed: {e}")
 
