@@ -14,10 +14,11 @@ MODEL_PATH = "plant_disease_model.pth"
 if not os.path.exists(MODEL_PATH):
     url = "https://drive.google.com/uc?id=1PsDJwg5L45i5e60la8xjS-4v7YFWs2RA"
     gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device), strict=False)
+    state_dict = torch.load(MODEL_PATH, map_location=device)
+model.load_state_dict(state_dict, strict=False)
+model.eval()
     model.eval()
-# Load model
-MODEL_PATH = "plant_disease_model.pth"
+# Load mode
 
 CLASS_LABELS = [
     'Apple___Apple_scab',
