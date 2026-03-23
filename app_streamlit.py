@@ -106,7 +106,7 @@ except Exception as e:
 # Image transform (exact training size)
 # ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((128, 128)),  # must match training
+    transforms.Resize((256, 256)),  # must match training
     transforms.ToTensor()
 ])
 
