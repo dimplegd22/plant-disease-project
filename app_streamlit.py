@@ -69,7 +69,7 @@ class PlantDiseaseCNN(nn.Module):
         x = self.pool(torch.relu(self.conv1(x)))
         x = self.pool(torch.relu(self.conv2(x)))
 
-        x = x.view(x.size(0), -1)
+        x = torch.flatten(x, 1)
 
         x = torch.relu(self.fc1(x))   # first fully connected
         x = self.fc2(x)               # final output layer
