@@ -4,6 +4,10 @@ from torchvision import transforms
 from PIL import Image
 import io
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 # Title
 st.title("🌿 Plant Disease Detection App")
 import os
@@ -21,8 +25,6 @@ try:
 except Exception as e:
     import streamlit as st
     st.error(f"Model loading failed: {e}")
-import torch
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load mode
 
