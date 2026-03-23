@@ -1,111 +1,91 @@
-import streamlit as st
 import torch
 import torch.nn as nn
+from torchvision import transforms, datasets
 from PIL import Image
-import torchvision.transforms as transforms
 import os
-import gdown
 
 # ---------------------------
-# 38 CLASS LABELS
+# Device
 # ---------------------------
-CLASS_LABELS = [
-    "Apple___Apple_scab","Apple___Black_rot","Apple___Cedar_apple_rust",
-    "Apple___healthy","Blueberry___healthy","Cherry___Powdery_mildew",
-    "Cherry___healthy","Corn___Cercospora_leaf_spot Gray_leaf_spot",
-    "Corn___Common_rust","Corn___Northern_Leaf_Blight","Corn___healthy",
-    "Grape___Black_rot","Grape___Esca_(Black_Measles)","Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
-    "Grape___healthy","Orange___Haunglongbing_(Citrus_greening)","Peach___Bacterial_spot",
-    "Peach___healthy","Pepper,_bell___Bacterial_spot","Pepper,_bell___healthy",
-    "Potato___Early_blight","Potato___Late_blight","Potato___healthy",
-    "Raspberry___healthy","Soybean___healthy","Squash___Powdery_mildew",
-    "Strawberry___Leaf_scorch","Strawberry___healthy","Tomato___Bacterial_spot",
-    "Tomato___Early_blight","Tomato___Late_blight","Tomato___Leaf_Mold",
-    "Tomato___Septoria_leaf_spot","Tomato___Spider_mites Two-spotted_spider_mite",
-    "Tomato___Target_Spot","Tomato___Tomato_Yellow_Leaf_Curl_Virus",
-    "Tomato___Tomato_mosaic_virus","Tomato___healthy"
-]
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ---------------------------
-# MODEL ARCHITECTURE
+# Class labels
+# ---------------------------
+train_dataset_path = "C:/Users/X14 OLED Display/OneDrive/Desktop/python/data/train"
+train_dataset = datasets.ImageFolder(train_dataset_path)
+class_labels = train_dataset.classes  # automatically gets class names
+
+# ---------------------------
+# Model definition (matches training)
 # ---------------------------
 class PlantDiseaseCNN(nn.Module):
-    def __init__(self):
+    def __init__(self, num_classes=len(class_labels)):
         super().__init__()
         self.conv1 = nn.Conv2d(3, 32, kernel_size=4, stride=1, padding=1)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=1, padding=1)
         self.conv3 = nn.Conv2d(64, 128, kernel_size=4, stride=1, padding=1)
         self.conv4 = nn.Conv2d(128, 256, kernel_size=4, stride=1, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        # Compute flatten size dynamically for 128x128 input
-        dummy = torch.zeros(1, 3, 128, 128)
-        x = self.pool(torch.relu(self.conv1(dummy)))
-        x = self.pool(torch.relu(self.conv2(x)))
-        x = self.pool(torch.relu(self.conv3(x)))
-        x = self.pool(torch.relu(self.conv4(x)))
-        flatten_size = x.numel()
-        self.fc1 = nn.Linear(flatten_size, 512)
-        self.fc2 = nn.Linear(512, len(CLASS_LABELS))
+
+        # Compute flatten size using training input (128x128)
+        dummy_input = torch.zeros(1, 3, 128, 128)
+        with torch.no_grad():
+            x = self.pool(torch.relu(self.conv1(dummy_input)))
+            x = self.pool(torch.relu(self.conv2(x)))
+            x = self.pool(torch.relu(self.conv3(x)))
+            x = self.pool(torch.relu(self.conv4(x)))
+            self.flattened_size = x.numel()
+
+        self.fc1 = nn.Linear(self.flattened_size, 512)
+        self.fc2 = nn.Linear(512, num_classes)
 
     def forward(self, x):
         x = self.pool(torch.relu(self.conv1(x)))
         x = self.pool(torch.relu(self.conv2(x)))
         x = self.pool(torch.relu(self.conv3(x)))
         x = self.pool(torch.relu(self.conv4(x)))
-        x = torch.flatten(x,1)
+        x = x.view(-1, self.flattened_size)
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)
         return x
 
 # ---------------------------
-# DEVICE
-# ---------------------------
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = PlantDiseaseCNN().to(device)
-
-# ---------------------------
-# MODEL PATH AND DOWNLOAD
+# Load the trained model
 # ---------------------------
 MODEL_PATH = "plant_disease_model.pth"
-if not os.path.exists(MODEL_PATH):
-    url = "https://drive.google.com/uc?id=1PsDJwg5L45i5e60la8xjS-4v7YFWs2RA"
-    gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
+model = PlantDiseaseCNN()
+model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+model.to(device)
+model.eval()  # Set model to evaluation mode
 
 # ---------------------------
-# LOAD MODEL
-# ---------------------------
-try:
-    state_dict = torch.load(MODEL_PATH, map_location=device)
-    model.load_state_dict(state_dict, strict=True)  # now matches exactly
-    model.eval()
-    st.write("✅ Model loaded successfully")
-except Exception as e:
-    st.error(f"⚠ Model loading failed: {e}")
-
-# ---------------------------
-# IMAGE TRANSFORM
+# Preprocessing for inference
 # ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((128,128)),  # exact training size
-    transforms.ToTensor()
+    transforms.Resize((128, 128)),  # Must match training size
+    transforms.ToTensor(),
+    transforms.Normalize([0.5, 0.5, 0.5],[0.5, 0.5, 0.5])  # Optional: use if used during training
 ])
 
 # ---------------------------
-# STREAMLIT UI
+# Prediction function
 # ---------------------------
-st.title("🌿 Plant Disease Detection App")
-uploaded_file = st.file_uploader("Upload a plant image", type=["jpg","png","jpeg"])
+def preprocess_image(image_path):
+    image = Image.open(image_path).convert("RGB")
+    return transform(image).unsqueeze(0)  # Add batch dimension
 
-if uploaded_file is not None:
-    try:
-        image = Image.open(uploaded_file).convert("RGB")
-        st.image(image, caption="Uploaded Image", use_column_width=True)
-        img = transform(image).unsqueeze(0).to(device)
+def predict_plant_disease(image_path):
+    img_tensor = preprocess_image(image_path).to(device)
+    with torch.no_grad():
+        outputs = model(img_tensor)
+        _, predicted = torch.max(outputs, 1)
+    return class_labels[predicted.item()]
 
-        with torch.no_grad():
-            outputs = model(img)
-            _, predicted = torch.max(outputs,1)
-            result = CLASS_LABELS[predicted.item()].replace("___"," - ").replace("_"," ")
-        st.success(f"Prediction: {result}")
-    except Exception as e:
-        st.error(f"Error during prediction: {e}")
+# ---------------------------
+# Example usage
+# ---------------------------
+if __name__ == "__main__":
+    test_image = "data/train/Apple___Apple_scab/0a5e9323-dbad-432d-ac58-d291718345d9___FREC_Scab 3417_90deg.JPG"
+    label = predict_plant_disease(test_image)
+    print("Predicted Plant Disease:", label)
