@@ -7,7 +7,7 @@ import os
 import gdown
 
 # ---------------------------
-# 38 CLASS LABELS MATCHING THE TRAINED MODEL
+# ✅ CLASS LABELS (38 classes matching trained model)
 # ---------------------------
 CLASS_LABELS = [
     "Apple___Apple_scab",
@@ -51,7 +51,7 @@ CLASS_LABELS = [
 ]
 
 # ---------------------------
-# MODEL ARCHITECTURE (DYNAMIC FLATTEN SIZE)
+# ✅ MODEL ARCHITECTURE (matches original checkpoint)
 # ---------------------------
 class PlantDiseaseCNN(nn.Module):
     def __init__(self, num_classes):
@@ -60,13 +60,8 @@ class PlantDiseaseCNN(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=4)
 
-        # Dynamically compute flatten size
-        dummy = torch.zeros(1, 3, 256, 256)
-        dummy = self.pool(torch.relu(self.conv1(dummy)))
-        dummy = self.pool(torch.relu(self.conv2(dummy)))
-        flatten_size = dummy.numel()
-
-        self.fc1 = nn.Linear(flatten_size, 512)
+        # flatten size must match checkpoint
+        self.fc1 = nn.Linear(57600, 512)
         self.fc2 = nn.Linear(512, num_classes)
 
     def forward(self, x):
@@ -78,46 +73,45 @@ class PlantDiseaseCNN(nn.Module):
         return x
 
 # ---------------------------
-# DEVICE
+# ✅ DEVICE
 # ---------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ---------------------------
-# CREATE MODEL
+# ✅ CREATE MODEL
 # ---------------------------
 model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS))
 model.to(device)
 
 # ---------------------------
-# MODEL PATH & DOWNLOAD
+# ✅ MODEL PATH AND DOWNLOAD
 # ---------------------------
 MODEL_PATH = "plant_disease_model.pth"
-
 if not os.path.exists(MODEL_PATH):
     url = "https://drive.google.com/uc?id=1PsDJwg5L45i5e60la8xjS-4v7YFWs2RA"
     gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
 
 # ---------------------------
-# LOAD MODEL
+# ✅ LOAD MODEL
 # ---------------------------
 try:
     state_dict = torch.load(MODEL_PATH, map_location=device)
     model.load_state_dict(state_dict, strict=False)
     model.eval()
-    st.write("✅ Model loaded successfully.")
+    st.write("✅ Model loaded successfully")
 except Exception as e:
     st.error(f"⚠ Model loading failed: {e}")
 
 # ---------------------------
-# IMAGE TRANSFORM
+# ✅ IMAGE TRANSFORM
 # ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((256, 256)),
+    transforms.Resize((128, 128)),  # Must match training input size
     transforms.ToTensor()
 ])
 
 # ---------------------------
-# STREAMLIT UI
+# ✅ STREAMLIT UI
 # ---------------------------
 st.title("🌿 Plant Disease Detection App")
 
@@ -135,7 +129,8 @@ if uploaded_file is not None:
             _, predicted = torch.max(outputs, 1)
             raw_result = CLASS_LABELS[predicted.item()]
             result = raw_result.replace("___", " - ").replace("_", " ")
-        
+
         st.success(f"Prediction: {result}")
+
     except Exception as e:
         st.error(f"Error during prediction: {e}")
