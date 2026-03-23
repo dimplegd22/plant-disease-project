@@ -196,11 +196,6 @@ DESCRIPTIONS = {
 }
 
 
-# Initialize spaCy NLP model
-nlp = spacy.load("en_core_web_sm")
-
-# Initialize Google Translate for translation
-
 
 # Define the PyTorch model (adjust based on your architecture)
 class PlantDiseaseCNN(torch.nn.Module):
