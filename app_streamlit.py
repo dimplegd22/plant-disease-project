@@ -46,7 +46,6 @@ class PlantDiseaseCNN(torch.nn.Module):
 device = torch.device("cpu")
 model = PlantDiseaseCNN()
 
-model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
 model.eval()
 
 # Image preprocess
