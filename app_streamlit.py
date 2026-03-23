@@ -7,7 +7,7 @@ import os
 import gdown
 
 # ---------------------------
-# ✅ CLASS LABELS (EDIT if needed)
+# ✅ CLASS LABELS
 # ---------------------------
 CLASS_LABELS = [
     "Apple___Apple_scab",
@@ -49,21 +49,22 @@ CLASS_LABELS = [
     "Tomato___Tomato_mosaic_virus",
     "Tomato___healthy"
 ]
+
 # ---------------------------
 # ✅ MODEL ARCHITECTURE
 # ---------------------------
 class PlantDiseaseCNN(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 32, 4)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=4)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, 4)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4)
 
-        # Create a dummy tensor to compute the flatten size automatically
-        dummy = torch.zeros(1, 3, 256, 256)  # 256x256 input image
+        # Dynamically calculate flatten size
+        dummy = torch.zeros(1, 3, 256, 256)
         dummy = self.pool(torch.relu(self.conv1(dummy)))
         dummy = self.pool(torch.relu(self.conv2(dummy)))
-        flatten_size = dummy.numel()  # total number of features
+        flatten_size = dummy.numel()
 
         self.fc1 = nn.Linear(flatten_size, 512)
         self.fc2 = nn.Linear(512, num_classes)
@@ -71,14 +72,10 @@ class PlantDiseaseCNN(nn.Module):
     def forward(self, x):
         x = self.pool(torch.relu(self.conv1(x)))
         x = self.pool(torch.relu(self.conv2(x)))
-
         x = torch.flatten(x, 1)
-
-        x = torch.relu(self.fc1(x))   # first fully connected
-        x = self.fc2(x)               # final output layer
-
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
         return x
-        
 
 # ---------------------------
 # ✅ DEVICE
@@ -88,7 +85,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # ---------------------------
 # ✅ CREATE MODEL
 # ---------------------------
-model = PlantDiseaseCNN()
+model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS))
+model.to(device)
 
 # ---------------------------
 # ✅ MODEL PATH
@@ -108,7 +106,6 @@ if not os.path.exists(MODEL_PATH):
 try:
     state_dict = torch.load(MODEL_PATH, map_location=device)
     model.load_state_dict(state_dict, strict=False)
-    model.to(device)
     model.eval()
 except Exception as e:
     st.error(f"Model loading failed: {e}")
@@ -137,6 +134,7 @@ if uploaded_file is not None:
     with torch.no_grad():
         outputs = model(img)
         _, predicted = torch.max(outputs, 1)
-        result = CLASS_LABELS[predicted.item()]
-
+        raw_result = CLASS_LABELS[predicted.item()]
+        result = raw_result.replace("___", " - ").replace("_", " ")
+    
     st.success(f"Prediction: {result}")
