@@ -53,7 +53,7 @@ MODEL_PATH = "plant_disease_model.pth"
 # ✅ DOWNLOAD MODEL FROM GOOGLE DRIVE
 # ---------------------------
 if not os.path.exists(MODEL_PATH):
-    url = "https://drive.google.com/uc?id=YOUR_FILE_ID"
+    url = "https://drive.google.com/uc?id=1PsDJwg5L45i5e60la8xjS-4v7YFWs2RA"
     gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
 
 # ---------------------------
