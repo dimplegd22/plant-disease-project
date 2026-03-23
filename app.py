@@ -29,7 +29,7 @@ MODEL_PATH = "plant_disease_model.pth"
 # 🔽 ADD THIS PART HERE
 if not os.path.exists(MODEL_PATH):
     url = "https://drive.google.com/uc?id=1PsDJwg5L45i5e60la8xjS-4v7YFWs2RA"
-    gdown.download(url, MODEL_PATH, quiet=False)
+    gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
     
     model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
     model.eval()
