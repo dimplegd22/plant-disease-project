@@ -7,7 +7,7 @@ import os
 import gdown
 
 # ---------------------------
-# ✅ CLASS LABELS
+# 38 CLASS LABELS MATCHING THE TRAINED MODEL
 # ---------------------------
 CLASS_LABELS = [
     "Apple___Apple_scab",
@@ -51,7 +51,7 @@ CLASS_LABELS = [
 ]
 
 # ---------------------------
-# ✅ MODEL ARCHITECTURE
+# MODEL ARCHITECTURE (DYNAMIC FLATTEN SIZE)
 # ---------------------------
 class PlantDiseaseCNN(nn.Module):
     def __init__(self, num_classes):
@@ -60,7 +60,7 @@ class PlantDiseaseCNN(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=4)
 
-        # Dynamically calculate flatten size
+        # Dynamically compute flatten size
         dummy = torch.zeros(1, 3, 256, 256)
         dummy = self.pool(torch.relu(self.conv1(dummy)))
         dummy = self.pool(torch.relu(self.conv2(dummy)))
@@ -78,40 +78,38 @@ class PlantDiseaseCNN(nn.Module):
         return x
 
 # ---------------------------
-# ✅ DEVICE
+# DEVICE
 # ---------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ---------------------------
-# ✅ CREATE MODEL
+# CREATE MODEL
 # ---------------------------
 model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS))
 model.to(device)
 
 # ---------------------------
-# ✅ MODEL PATH
+# MODEL PATH & DOWNLOAD
 # ---------------------------
 MODEL_PATH = "plant_disease_model.pth"
 
-# ---------------------------
-# ✅ DOWNLOAD MODEL FROM GOOGLE DRIVE
-# ---------------------------
 if not os.path.exists(MODEL_PATH):
     url = "https://drive.google.com/uc?id=1PsDJwg5L45i5e60la8xjS-4v7YFWs2RA"
     gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
 
 # ---------------------------
-# ✅ LOAD MODEL
+# LOAD MODEL
 # ---------------------------
 try:
     state_dict = torch.load(MODEL_PATH, map_location=device)
     model.load_state_dict(state_dict, strict=False)
     model.eval()
+    st.write("✅ Model loaded successfully.")
 except Exception as e:
-    st.error(f"Model loading failed: {e}")
+    st.error(f"⚠ Model loading failed: {e}")
 
 # ---------------------------
-# ✅ IMAGE TRANSFORM
+# IMAGE TRANSFORM
 # ---------------------------
 transform = transforms.Compose([
     transforms.Resize((256, 256)),
@@ -119,22 +117,25 @@ transform = transforms.Compose([
 ])
 
 # ---------------------------
-# ✅ STREAMLIT UI
+# STREAMLIT UI
 # ---------------------------
 st.title("🌿 Plant Disease Detection App")
 
 uploaded_file = st.file_uploader("Upload a plant image", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    try:
+        image = Image.open(uploaded_file).convert("RGB")
+        st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    img = transform(image).unsqueeze(0).to(device)
+        img = transform(image).unsqueeze(0).to(device)
 
-    with torch.no_grad():
-        outputs = model(img)
-        _, predicted = torch.max(outputs, 1)
-        raw_result = CLASS_LABELS[predicted.item()]
-        result = raw_result.replace("___", " - ").replace("_", " ")
-    
-    st.success(f"Prediction: {result}")
+        with torch.no_grad():
+            outputs = model(img)
+            _, predicted = torch.max(outputs, 1)
+            raw_result = CLASS_LABELS[predicted.item()]
+            result = raw_result.replace("___", " - ").replace("_", " ")
+        
+        st.success(f"Prediction: {result}")
+    except Exception as e:
+        st.error(f"Error during prediction: {e}")
