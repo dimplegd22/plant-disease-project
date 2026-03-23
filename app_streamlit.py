@@ -54,20 +54,19 @@ CLASS_LABELS = [
 # Model architecture (matches checkpoint)
 # ---------------------------
 class PlantDiseaseCNN(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, input_size=(256, 256)):  # add input_size parameter
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 32, 4)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, 4)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=4)
+        self.pool = nn.MaxPool2d(2,2)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4)
 
-        # dynamically calculate flatten size
+        # dynamically calculate flatten size using the input_size
         dummy = torch.zeros(1, 3, *input_size)
         dummy = self.pool(torch.relu(self.conv1(dummy)))
         dummy = self.pool(torch.relu(self.conv2(dummy)))
         flatten_size = dummy.numel()
 
-        # flatten size must match training
-        self.fc1 = nn.Linear(57600, 512)
+        self.fc1 = nn.Linear(flatten_size, 512)
         self.fc2 = nn.Linear(512, num_classes)
 
     def forward(self, x):
@@ -86,7 +85,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # ---------------------------
 # Create model
 # ---------------------------
-model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS))
+model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS), input_size=(256, 256))
 model.to(device)
 
 # ---------------------------
@@ -112,7 +111,7 @@ except Exception as e:
 # Image transform (exact training size)
 # ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((128, 128)),  # must match training
+    transforms.Resize((256, 256)),  # keep original upload size
     transforms.ToTensor()
 ])
 
