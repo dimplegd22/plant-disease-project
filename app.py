@@ -2,7 +2,6 @@ import os
 import torch
 import numpy as np
 from torchvision import transforms
-from flask import Flask, redirect, url_for, request, render_template, jsonify
 from werkzeug.utils import secure_filename
 from PIL import Image
 import io
