@@ -87,7 +87,7 @@ except Exception as e:
 # IMAGE TRANSFORM
 # ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((128,128)),  # matches dynamic input_size
+    transforms.Resize((original_height, original_width)),  # exact size
     transforms.ToTensor()
 ])
 
