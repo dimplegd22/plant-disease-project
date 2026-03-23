@@ -7,61 +7,37 @@ import os
 import gdown
 
 # ---------------------------
-# 38 CLASS LABELS matching trained model
+# 38 CLASS LABELS (match your .pth)
 # ---------------------------
 CLASS_LABELS = [
-    "Apple___Apple_scab",
-    "Apple___Black_rot",
-    "Apple___Cedar_apple_rust",
-    "Apple___healthy",
-    "Blueberry___healthy",
-    "Cherry___Powdery_mildew",
-    "Cherry___healthy",
-    "Corn___Cercospora_leaf_spot Gray_leaf_spot",
-    "Corn___Common_rust",
-    "Corn___Northern_Leaf_Blight",
-    "Corn___healthy",
-    "Grape___Black_rot",
-    "Grape___Esca_(Black_Measles)",
-    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
-    "Grape___healthy",
-    "Orange___Haunglongbing_(Citrus_greening)",
-    "Peach___Bacterial_spot",
-    "Peach___healthy",
-    "Pepper,_bell___Bacterial_spot",
-    "Pepper,_bell___healthy",
-    "Potato___Early_blight",
-    "Potato___Late_blight",
-    "Potato___healthy",
-    "Raspberry___healthy",
-    "Soybean___healthy",
-    "Squash___Powdery_mildew",
-    "Strawberry___Leaf_scorch",
-    "Strawberry___healthy",
-    "Tomato___Bacterial_spot",
-    "Tomato___Early_blight",
-    "Tomato___Late_blight",
-    "Tomato___Leaf_Mold",
-    "Tomato___Septoria_leaf_spot",
-    "Tomato___Spider_mites Two-spotted_spider_mite",
-    "Tomato___Target_Spot",
-    "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
-    "Tomato___Tomato_mosaic_virus",
-    "Tomato___healthy"
+    "Apple___Apple_scab","Apple___Black_rot","Apple___Cedar_apple_rust",
+    "Apple___healthy","Blueberry___healthy","Cherry___Powdery_mildew",
+    "Cherry___healthy","Corn___Cercospora_leaf_spot Gray_leaf_spot",
+    "Corn___Common_rust","Corn___Northern_Leaf_Blight","Corn___healthy",
+    "Grape___Black_rot","Grape___Esca_(Black_Measles)","Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+    "Grape___healthy","Orange___Haunglongbing_(Citrus_greening)","Peach___Bacterial_spot",
+    "Peach___healthy","Pepper,_bell___Bacterial_spot","Pepper,_bell___healthy",
+    "Potato___Early_blight","Potato___Late_blight","Potato___healthy",
+    "Raspberry___healthy","Soybean___healthy","Squash___Powdery_mildew",
+    "Strawberry___Leaf_scorch","Strawberry___healthy","Tomato___Bacterial_spot",
+    "Tomato___Early_blight","Tomato___Late_blight","Tomato___Leaf_Mold",
+    "Tomato___Septoria_leaf_spot","Tomato___Spider_mites Two-spotted_spider_mite",
+    "Tomato___Target_Spot","Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+    "Tomato___Tomato_mosaic_virus","Tomato___healthy"
 ]
 
 # ---------------------------
-# Model architecture (matches checkpoint)
+# MODEL ARCHITECTURE (dynamic flatten for any image size)
 # ---------------------------
 class PlantDiseaseCNN(nn.Module):
-    def __init__(self, num_classes, input_size=(256, 256)):  # add input_size parameter
+    def __init__(self, num_classes, input_size=(256,256)):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=4)
+        self.conv1 = nn.Conv2d(3, 32, 4)
         self.pool = nn.MaxPool2d(2,2)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=4)
+        self.conv2 = nn.Conv2d(32, 64, 4)
 
-        # dynamically calculate flatten size using the input_size
-        dummy = torch.zeros(1, 3, *input_size)
+        # compute flatten size dynamically from input_size
+        dummy = torch.zeros(1,3,*input_size)
         dummy = self.pool(torch.relu(self.conv1(dummy)))
         dummy = self.pool(torch.relu(self.conv2(dummy)))
         flatten_size = dummy.numel()
@@ -78,18 +54,18 @@ class PlantDiseaseCNN(nn.Module):
         return x
 
 # ---------------------------
-# Device
+# DEVICE
 # ---------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ---------------------------
-# Create model
+# CREATE MODEL (256x256 input)
 # ---------------------------
-model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS), input_size=(256, 256))
+model = PlantDiseaseCNN(num_classes=len(CLASS_LABELS), input_size=(256,256))
 model.to(device)
 
 # ---------------------------
-# Model path and download
+# MODEL PATH AND DOWNLOAD
 # ---------------------------
 MODEL_PATH = "plant_disease_model.pth"
 if not os.path.exists(MODEL_PATH):
@@ -97,30 +73,30 @@ if not os.path.exists(MODEL_PATH):
     gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
 
 # ---------------------------
-# Load model safely
+# LOAD MODEL (conv weights only)
 # ---------------------------
 try:
     state_dict = torch.load(MODEL_PATH, map_location=device)
-    model.load_state_dict(state_dict, strict=False)
+    model.load_state_dict(state_dict, strict=False)  # fc1 mismatch is ok
     model.eval()
     st.write("✅ Model loaded successfully")
 except Exception as e:
     st.error(f"⚠ Model loading failed: {e}")
 
 # ---------------------------
-# Image transform (exact training size)
+# IMAGE TRANSFORM
 # ---------------------------
 transform = transforms.Compose([
-    transforms.Resize((256, 256)),  # keep original upload size
+    transforms.Resize((256,256)),  # matches dynamic input_size
     transforms.ToTensor()
 ])
 
 # ---------------------------
-# Streamlit UI
+# STREAMLIT UI
 # ---------------------------
 st.title("🌿 Plant Disease Detection App")
 
-uploaded_file = st.file_uploader("Upload a plant image", type=["jpg", "png", "jpeg"])
+uploaded_file = st.file_uploader("Upload a plant image", type=["jpg","png","jpeg"])
 
 if uploaded_file is not None:
     try:
@@ -133,9 +109,8 @@ if uploaded_file is not None:
             outputs = model(img)
             _, predicted = torch.max(outputs, 1)
             raw_result = CLASS_LABELS[predicted.item()]
-            result = raw_result.replace("___", " - ").replace("_", " ")
+            result = raw_result.replace("___"," - ").replace("_"," ")
 
         st.success(f"Prediction: {result}")
-
     except Exception as e:
         st.error(f"Error during prediction: {e}")
