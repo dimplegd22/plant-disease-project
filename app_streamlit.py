@@ -1,79 +1,96 @@
 import streamlit as st
 import torch
-from torchvision import transforms
+import torch.nn as nn
 from PIL import Image
-import io
-
-
-# Title
-st.title("🌿 Plant Disease Detection App")
+import torchvision.transforms as transforms
 import os
 import gdown
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class PlantDiseaseCNN(torch.nn.Module):
+# ---------------------------
+# ✅ CLASS LABELS (EDIT if needed)
+# ---------------------------
+CLASS_LABELS = [
+    "Healthy",
+    "Bacterial Spot",
+    "Early Blight",
+    "Late Blight"
+]
+
+# ---------------------------
+# ✅ MODEL ARCHITECTURE
+# ---------------------------
+class PlantDiseaseCNN(nn.Module):
     def __init__(self):
         super(PlantDiseaseCNN, self).__init__()
-        self.conv1 = torch.nn.Conv2d(3, 32, 3)
-        self.pool = torch.nn.MaxPool2d(2, 2)
-        self.fc1 = torch.nn.Linear(32 * 127 * 127, len(CLASS_LABELS))
+        self.conv1 = nn.Conv2d(3, 16, 3)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(16, 32, 3)
+        self.fc1 = nn.Linear(32 * 127 * 127, len(CLASS_LABELS))
 
     def forward(self, x):
         x = self.pool(torch.relu(self.conv1(x)))
+        x = self.pool(torch.relu(self.conv2(x)))
         x = x.view(x.size(0), -1)
-        return self.fc1(x)
+        x = self.fc1(x)
+        return x
 
-device = torch.device("cpu")
+# ---------------------------
+# ✅ DEVICE
+# ---------------------------
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# ---------------------------
+# ✅ CREATE MODEL
+# ---------------------------
 model = PlantDiseaseCNN()
 
-model.eval()
-
+# ---------------------------
+# ✅ MODEL PATH
+# ---------------------------
 MODEL_PATH = "plant_disease_model.pth"
 
+# ---------------------------
+# ✅ DOWNLOAD MODEL FROM GOOGLE DRIVE
+# ---------------------------
 if not os.path.exists(MODEL_PATH):
-    url = "https://drive.google.com/uc?id=1PsDJwg5L45i5e60la8xjS-4v7YFWs2RA"
+    url = "https://drive.google.com/uc?id=YOUR_FILE_ID"
     gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
+
+# ---------------------------
+# ✅ LOAD MODEL
+# ---------------------------
 try:
     state_dict = torch.load(MODEL_PATH, map_location=device)
     model.load_state_dict(state_dict, strict=False)
+    model.to(device)
     model.eval()
 except Exception as e:
-    import streamlit as st
     st.error(f"Model loading failed: {e}")
 
-# Load mode
+# ---------------------------
+# ✅ IMAGE TRANSFORM
+# ---------------------------
+transform = transforms.Compose([
+    transforms.Resize((256, 256)),
+    transforms.ToTensor()
+])
 
-CLASS_LABELS = [
-    'Apple___Apple_scab',
-    'Apple___healthy',
-    'Tomato___Early_blight',
-    'Tomato___healthy'
-]
+# ---------------------------
+# ✅ STREAMLIT UI
+# ---------------------------
+st.title("🌿 Plant Disease Detection App")
 
-
-# Image preprocess
-def preprocess_image(image):
-    transform = transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.ToTensor()
-    ])
-    return transform(image).unsqueeze(0)
-
-# Prediction
-def predict(image):
-    img = preprocess_image(image)
-    with torch.no_grad():
-        output = model(img)
-        index = torch.argmax(output, dim=1).item()
-        return CLASS_LABELS[index]
-
-# Upload image
 uploaded_file = st.file_uploader("Upload a plant image", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file)
+    image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    if st.button("Predict"):
-        result = predict(image)
-        st.success(f"Prediction: {result}")
+    img = transform(image).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        outputs = model(img)
+        _, predicted = torch.max(outputs, 1)
+        result = CLASS_LABELS[predicted.item()]
+
+    st.success(f"Prediction: {result}")
